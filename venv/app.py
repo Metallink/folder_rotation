@@ -1,10 +1,10 @@
 import time
 import datetime
-import logging
 from zipfile import ZipFile
 from pathlib import Path
 
 from constants import *
+from Logger.logger import LOGGER
 
 # print(CUR_DIR)
 # print(f"{time.asctime(time.gmtime(TIME_ROTATION))} --> last access")
@@ -18,21 +18,26 @@ def build_filename(file_creation_date: int) -> str:
     time = datetime.datetime.fromtimestamp(file_creation_date)
     # format
     time = time.strftime(DATE_FORMAT)
-    filename = time + " | Analysis service log"
-    return (filename)
+    filename = time + " log"
+    return filename
 
-def compress_files(files: list, filename: str):
-    with ZipFile(filename, "w") as zip:
-        for file in [p for p in p.iterdir() if p.is_file()]:
+def get_list_files(path: Path) -> list:
+    return [f for f in path.iterdir() if f.is_file() and (get_file_age(path) < time.time() - TIME_ROTATION)]
+
+def compress_files(files: list, filename: str, path: Path):
+    with ZipFile(filename + ".zip", "w") as zip:
+        for file in get_list_files(path):
             zip.write(file, arcname=file.name)
-    logging.debug("Log compressed successfuly.")
+    LOGGER.info("Log compressed successfuly.")
 
 def get_file_age(path) -> int:
     return Path(path).stat().st_ctime
 
 if __name__ == "__main__":
+    l = get_list_files(p)
     f = build_filename(CUR_DIR.stat().st_ctime)
-    print(f)
+    compress_files(l,f,p)
+
 
 
 
